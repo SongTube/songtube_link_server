@@ -29,7 +29,7 @@ class Main extends StatefulWidget {
   State<Main> createState() => _MainState();
 }
 
-class _MainState extends State<Main> with TrayListener{
+class _MainState extends State<Main> with TrayListener, WindowListener {
 
   // Autostart status
   late bool autoStart = widget.autoStart;
@@ -37,6 +37,7 @@ class _MainState extends State<Main> with TrayListener{
   @override
   void initState() {
     TrayManager.instance.addListener(this);
+    windowManager.addListener(this);
     super.initState();
     runTray(autoStart);
   }
@@ -44,7 +45,15 @@ class _MainState extends State<Main> with TrayListener{
   @override
   void dispose() {
     TrayManager.instance.removeListener(this);
+    windowManager.removeListener(this);
     super.dispose();
+  }
+
+  @override
+  void onWindowFocus() {
+    // Make sure to call once.
+    setState(() {});
+    // do something
   }
 
   @override

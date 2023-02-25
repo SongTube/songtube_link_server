@@ -30,8 +30,13 @@ class LinkServer {
         // Retrieve the detected device with SongTube
         if (request.uri.path == '/detect') {
           // Check LAN IP
-          var wifiIP = await NetworkInfo().getWifiIP();
-          var subnet = ipToCSubnet(wifiIP!);
+          String? wifiIP;
+          try {
+            wifiIP = await NetworkInfo().getWifiIP();
+          } catch (_) {
+            wifiIP = null;
+          }
+          var subnet = wifiIP != null ? ipToCSubnet(wifiIP) : '192.168.1';
           // Fetch list of hosts in local network
           final scanner = LanScanner();
           final Completer completer = Completer();
