@@ -10,13 +10,13 @@ import 'package:tray_manager/tray_manager.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
-  final autoStart = Platform.isLinux ? false : await launchAtStartup.isEnabled();
-  LinkServer.initialize(autoStart);
   PackageInfo packageInfo = await PackageInfo.fromPlatform();
   LaunchAtStartup.instance.setup(
     appName: packageInfo.appName,
     appPath: Platform.resolvedExecutable,
   );
+  final autoStart = await launchAtStartup.isEnabled();
+  LinkServer.initialize(autoStart);
   runApp(Main(autoStart: autoStart));
 }
 
@@ -36,28 +36,40 @@ class _MainState extends State<Main> with TrayListener{
 
   @override
   void initState() {
-    trayManager.addListener(this);
+    TrayManager.instance.addListener(this);
     super.initState();
     runTray(autoStart);
   }
 
   @override
   void dispose() {
-    trayManager.removeListener(this);
+    TrayManager.instance.removeListener(this);
     super.dispose();
   }
 
   @override
-  void onTrayMenuItemClick(MenuItem menuItem) {
+  void onTrayIconMouseDown() {
+    TrayManager.instance.popUpContextMenu();
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    TrayManager.instance.popUpContextMenu();
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) async {
     if (menuItem.key == 'exit_app') {
       exit(0);
     }
     if (menuItem.key == 'startup') {
       if (autoStart) {
-        launchAtStartup.disable();
+        await launchAtStartup.disable();
       } else {
-        launchAtStartup.enable();
+        await launchAtStartup.enable();
       }
+      autoStart = await launchAtStartup.isEnabled();
+      runTray(autoStart);
     }
   }
 
@@ -74,15 +86,10 @@ void runTray(bool autoStart) async {
   await trayManager.setIcon(icon);
   List<MenuItem> items = [
     MenuItem(
-      label: 'SongTube Link',
+      key: 'title',
+      label: 'SongTube Link Server',
       icon: icon,
       disabled: true
-    ),
-    MenuItem.checkbox(
-      label: linkServer != null ? 'connected' : 'disconnected',
-      checked: linkServer != null,
-      disabled: true,
-      
     ),
     if (!Platform.isLinux)
     MenuItem.checkbox(
@@ -96,5 +103,6 @@ void runTray(bool autoStart) async {
       label: 'Exit App',
     ),
   ];
+  await trayManager.setToolTip('SongTube Link Server');
   await trayManager.setContextMenu(Menu(items: items));
 }
